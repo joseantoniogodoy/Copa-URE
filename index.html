@@ -67,12 +67,15 @@
       <tr>
         <td>
           <button class="escola-card"
-                  data-escola="Escola 09 de Julho"
-                  data-logo=""
-                  data-figurinhas="img/figurinhas/escola01/01.png|img/figurinhas/escola01/02.png|img/figurinhas/escola01/03.png">
-            <img class="escola-logo" src="img/9DeJulho.jpeg" alt="Logo Escola 09 de Julho">
-            <span class="escola-nome">Escola 09 de Julho</span>
+           data-escola="Escola 09 de Julho"
+           data-logo="img/9DeJulho.jpeg"
+           data-album-dir="img/albuns"
+           data-album-total="19">
+
+           <img class="escola-logo" src="img/9DeJulho.jpeg" alt="Logo Escola 09 de Julho">
+           <span class="escola-nome">Escola 09 de Julho</span>
           </button>
+
         </td>
         <td>
           <button class="escola-card"
@@ -185,9 +188,12 @@
     <div class="modal-conteudo">
       <button class="nav-btn" type="button" id="btnPrev" aria-label="Figurinha anterior">‹</button>
 
-      <div class="figurinha-area">
-        <img id="imgFigurinha" class="figurinha" src="" alt="Figurinha da escola">
-      </div>
+      <div class="album-area">
+       <div class="pagina-dupla">
+       <img id="paginaEsq" class="album-pagina" alt="Página esquerda">
+       <img id="paginaDir" class="album-pagina" alt="Página direita">
+    </div>
+    </div>
 
       <button class="nav-btn" type="button" id="btnNext" aria-label="Próxima figurinha">›</button>
     </div>
@@ -204,22 +210,53 @@
   const modalLogo = document.getElementById("modalLogo");
   const modalTitulo = document.getElementById("modalTitulo");
   const modalContador = document.getElementById("modalContador");
-  const imgFigurinha = document.getElementById("imgFigurinha");
+
+  const paginaEsq = document.getElementById("paginaEsq");
+  const paginaDir = document.getElementById("paginaDir");
+
   const btnPrev = document.getElementById("btnPrev");
   const btnNext = document.getElementById("btnNext");
 
-  let figurinhas = [];
-  let idx = 0;
+  let albumDir = "";
+  let totalPaginas = 0;
+  let idx = 0; // índice da página esquerda (0 = páginas 1–2)
 
-  function abrirModal({ escola, logo, lista }) {
-    figurinhas = (lista || "").split("|").filter(Boolean);
+  function atualizarPagina(){
+    const total = totalPaginas;
+
+    // Página esquerda (sempre existe)
+    paginaEsq.src = `${albumDir}/${idx + 1}.png`;
+    paginaEsq.alt = `Página ${idx + 1}`;
+
+    // Página direita (pode não existir na última)
+    if (idx + 2 <= total){
+      paginaDir.src = `${albumDir}/${idx + 2}.png`;
+      paginaDir.alt = `Página ${idx + 2}`;
+      paginaDir.style.visibility = "visible";
+    } else {
+      paginaDir.src = "";
+      paginaDir.style.visibility = "hidden";
+    }
+
+    modalContador.textContent =
+      `${idx + 1}` +
+      (idx + 2 <= total ? `–${idx + 2}` : "") +
+      ` / ${total}`;
+
+    btnPrev.disabled = idx === 0;
+    btnNext.disabled = idx + 2 >= total;
+  }
+
+  function abrirModal({ escola, logo, dir, total }) {
+    albumDir = dir || "";
+    totalPaginas = Number(total || 0);
     idx = 0;
 
     modalLogo.src = logo || "";
     modalLogo.alt = "Logo " + (escola || "Escola");
     modalTitulo.textContent = escola ? ("Álbum — " + escola) : "Álbum";
 
-    atualizarFigurinha();
+    atualizarPagina();
 
     modal.classList.add("aberto");
     modal.setAttribute("aria-hidden", "false");
@@ -232,41 +269,38 @@
     document.body.style.overflow = "";
   }
 
-  function atualizarFigurinha() {
-    const total = figurinhas.length;
-    modalContador.textContent = total ? `${idx + 1} / ${total}` : "0 / 0";
-    imgFigurinha.src = total ? figurinhas[idx] : "";
-    imgFigurinha.alt = total ? `Figurinha ${idx + 1} de ${total}` : "Sem figurinhas cadastradas";
-    btnPrev.disabled = total <= 1;
-    btnNext.disabled = total <= 1;
-  }
-
+  // Clique nas escolas
   document.querySelectorAll(".escola-card").forEach(btn => {
     btn.addEventListener("click", () => {
+      // Só abre se tiver data-album-dir (no seu caso tem)
       abrirModal({
         escola: btn.dataset.escola,
         logo: btn.dataset.logo,
-        lista: btn.dataset.figurinhas
+        dir: btn.dataset.albumDir,
+        total: btn.dataset.albumTotal
       });
     });
   });
 
+  // Setas (avança de 2 em 2)
   btnPrev.addEventListener("click", () => {
-    if (!figurinhas.length) return;
-    idx = (idx - 1 + figurinhas.length) % figurinhas.length;
-    atualizarFigurinha();
+    if (idx === 0) return;
+    idx -= 2;
+    atualizarPagina();
   });
 
   btnNext.addEventListener("click", () => {
-    if (!figurinhas.length) return;
-    idx = (idx + 1) % figurinhas.length;
-    atualizarFigurinha();
+    if (idx + 2 >= totalPaginas) return;
+    idx += 2;
+    atualizarPagina();
   });
 
+  // Fechar clicando no fundo/fechar
   modal.addEventListener("click", (e) => {
     if (e.target && e.target.dataset && e.target.dataset.fechar) fecharModal();
   });
 
+  // Teclado
   document.addEventListener("keydown", (e) => {
     if (!modal.classList.contains("aberto")) return;
     if (e.key === "Escape") fecharModal();
@@ -274,6 +308,7 @@
     if (e.key === "ArrowRight") btnNext.click();
   });
 </script>
+
 
 
   <footer class="rodape">
